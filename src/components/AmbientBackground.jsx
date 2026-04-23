@@ -13,9 +13,9 @@ function Starfield(props) {
     const count = 3000;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      const r = 2 * Math.cbrt(Math.random());
-      const theta = Math.random() * 2 * Math.PI;
-      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 2 * Math.cbrt(random.randFloat(0, 1));
+      const theta = random.randFloat(0, 1) * 2 * Math.PI;
+      const phi = Math.acos(2 * random.randFloat(0, 1) - 1);
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = r * Math.cos(phi);

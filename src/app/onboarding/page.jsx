@@ -120,7 +120,7 @@ export default function Onboarding() {
       }
       
       if (address) {
-        await fetch('/api/auth', {
+        const response = await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -128,9 +128,13 @@ export default function Onboarding() {
             onboarding_answers: finalAnswers
           })
         });
+
+        if (!response.ok) {
+          throw new Error("Could not persist onboarding");
+        }
       }
-    } catch (err) {
-      console.error('Failed to save onboarding', err);
+    } catch {
+      // Intentionally ignore to avoid blocking navigation.
     }
   };
 

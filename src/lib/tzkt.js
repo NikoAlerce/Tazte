@@ -11,7 +11,7 @@ export const getUserNFTs = async (address) => {
     const response = await fetch(`${TZKT_API}/tokens/balances?account=${address}&limit=20&balance.gt=0`);
     if (!response.ok) return [];
     return await response.json();
-  } catch (e) {
+  } catch {
     return [];
   }
 };
@@ -22,7 +22,7 @@ export const getUserCreations = async (address) => {
     const response = await fetch(`${TZKT_API}/tokens?metadata.creators.contains=${address}&limit=10`);
     if (!response.ok) return [];
     return await response.json();
-  } catch (e) {
+  } catch {
     return [];
   }
 };

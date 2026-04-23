@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+"use client";
+
+import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { connectWallet, disconnectWallet as disconnectTezos, getActiveAccount } from '@/lib/tezos';
@@ -17,22 +19,7 @@ export default function WalletConnection() {
   const { connect: connectEvm } = useConnect();
   const { disconnect: disconnectEvm } = useDisconnect();
 
-  useEffect(() => {
-    checkTezos();
-    if (isEvmConnected && evmAddress) {
-      runAnalysis(evmAddress, 'etherlink');
-    }
-  }, [isEvmConnected, evmAddress]);
-
-  const checkTezos = async () => {
-    const account = await getActiveAccount();
-    if (account) {
-      setTezosAddress(account.address);
-      runAnalysis(account.address);
-    }
-  };
-
-  const runAnalysis = async (address, layer = 'tezos') => {
+  const runAnalysis = useCallback(async (address, layer = 'tezos') => {
     try {
       const data = await analyzeCollectorArchetype(address);
       setAnalysis(data);
@@ -48,6 +35,10 @@ export default function WalletConnection() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error("Failed to persist profile");
+      }
+
       const { profile } = await response.json();
 
       // Smart Redirection
@@ -60,10 +51,28 @@ export default function WalletConnection() {
       }, 2000); // Give them 2 seconds to see their archetype
 
     } catch (err) {
-      console.error('Analysis or Save failed', err);
       setAnalysis({ primaryArchetype: 'The Enigma' });
     }
-  };
+  }, [router]);
+
+  const checkTezos = useCallback(async () => {
+    const account = await getActiveAccount();
+    if (account) {
+      setTezosAddress(account.address);
+      runAnalysis(account.address);
+    }
+  }, [runAnalysis]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      checkTezos();
+      if (isEvmConnected && evmAddress) {
+        runAnalysis(evmAddress, 'etherlink');
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [checkTezos, isEvmConnected, evmAddress, runAnalysis]);
 
   const handleTezosConnect = async () => {
     try {
@@ -73,7 +82,6 @@ export default function WalletConnection() {
       // Non-blocking analysis
       runAnalysis(addr);
     } catch (err) {
-      console.error('Tezos connection failed', err);
       setIsTezosConnecting(false);
     }
   };

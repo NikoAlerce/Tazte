@@ -12,11 +12,6 @@ export const getWallet = () => {
     wallet = new BeaconWallet({
       name: 'Taste',
       preferredNetwork: 'mainnet',
-      eventHandlers: {
-        PERMISSION_REQUEST_SUCCESS: (data) => {
-          console.log('Permission granted:', data);
-        },
-      },
     });
   }
   return wallet;
@@ -25,27 +20,30 @@ export const getWallet = () => {
 export const connectWallet = async () => {
   try {
     const walletInstance = getWallet();
+    if (!walletInstance) {
+      throw new Error("Wallet unavailable");
+    }
     // Force a clear of any previous stale permissions
     await walletInstance.client.clearActiveAccount();
     
     await walletInstance.requestPermissions();
     
     const address = await walletInstance.getPKH();
-    console.log('Tezos address connected:', address);
     return address;
-  } catch (err) {
-    console.error('Beacon connection error:', err);
-    throw err;
+  } catch (error) {
+    throw error;
   }
 };
 
 export const disconnectWallet = async () => {
   const walletInstance = getWallet();
+  if (!walletInstance) return;
   await walletInstance.clearActiveAccount();
 };
 
 export const getActiveAccount = async () => {
   const walletInstance = getWallet();
+  if (!walletInstance) return null;
   const activeAccount = await walletInstance.client.getActiveAccount();
   return activeAccount;
 };

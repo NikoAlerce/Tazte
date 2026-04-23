@@ -36,7 +36,7 @@ export default function ProfileGallery({ profile, onNext }) {
 
         <div className="mb-16 max-w-sm">
           <p className="font-editorial text-3xl text-gray-300 leading-tight">
-            "{profile.quote}"
+            &quot;{profile.quote}&quot;
           </p>
         </div>
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ProfileGallery from "@/components/ProfileGallery";
@@ -7,24 +9,28 @@ export default function Discover() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadProfiles() {
-      const data = await getProfiles();
-      
-      // Map Supabase data to the UI format
-      const mappedProfiles = data.map(p => ({
-        id: p.id,
-        name: p.wallet_address.slice(0, 6),
-        role: p.archetype || "The Enigma",
-        quote: "Collecting memories on the chain...",
-        tags: [p.last_layer || "Universal", "Collector"],
-        archetype: p.archetype || "The Enigma",
-        image: `https://api.dicebear.com/7.x/shapes/svg?seed=${p.wallet_address}`, // Abstract avatar for privacy
-      }));
-
-      setProfiles(mappedProfiles);
-      setLoading(false);
+      try {
+        const data = await getProfiles();
+        const mappedProfiles = data.map((p) => ({
+          id: p.id,
+          name: p.wallet_address?.slice(0, 6) || "anon",
+          role: p.archetype || "The Enigma",
+          quote: "Collecting memories on the chain...",
+          tags: [p.last_layer || "Universal", "Collector"],
+          archetype: p.archetype || "The Enigma",
+          image: `https://api.dicebear.com/7.x/shapes/svg?seed=${p.wallet_address || p.id}`,
+        }));
+        setProfiles(mappedProfiles);
+      } catch {
+        setError("Could not load profiles right now.");
+        setProfiles([]);
+      } finally {
+        setLoading(false);
+      }
     }
     loadProfiles();
   }, []);
@@ -41,6 +47,14 @@ export default function Discover() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <p className="font-editorial text-2xl text-white/50 animate-pulse">Scanning the Art Sphere...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black px-8 text-center">
+        <p className="font-editorial text-2xl text-white/70">{error}</p>
       </div>
     );
   }

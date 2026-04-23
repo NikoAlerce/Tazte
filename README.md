@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Taste App
 
-## Getting Started
+Taste is a Next.js app for Web3 social discovery: wallet connection, archetype analysis, onboarding, and profile discovery.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router), React, Tailwind, Framer Motion
+- Supabase (profiles persistence)
+- Tezos (Beacon/Taquito) + EVM wallet (wagmi)
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill required values:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_TEZOS_RPC`
+- `PERSONALITY_ANALYZER_MODE` (`heuristic` or `external`)
+- `PERSONALITY_ANALYZER_URL` (required when mode is `external`)
+
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quality Gates
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- `npm run lint`
+- `npm run test`
+- `npm run build`
+- `npm run check` (lint + test + build)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+CI runs these checks for pull requests and pushes to `main`.
 
-## Learn More
+## Branch and Deploy Strategy
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `main` is production.
+- Use feature branches and open pull requests.
+- Every PR should pass CI before merge.
+- Vercel preview deploys should be used for review; production deploys from `main`.

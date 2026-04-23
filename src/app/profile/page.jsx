@@ -1,8 +1,47 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useAccount } from "wagmi";
+import { getProfileByAddress } from "@/lib/supabase";
+import { getConnectedWalletAddress, shortAddress } from "@/lib/walletSession";
+import { disconnectWallet as disconnectTezos } from "@/lib/tezos";
 
 export default function Profile() {
+  const { address: evmAddress } = useAccount();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const walletAddress = await getConnectedWalletAddress(evmAddress);
+        if (!walletAddress) {
+          setError("Connect your wallet to view your aura.");
+          setLoading(false);
+          return;
+        }
+
+        const data = await getProfileByAddress(walletAddress);
+        setProfile(data);
+      } catch {
+        setError("Could not load your profile.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [evmAddress]);
+
+  const auraLine = profile?.onboarding_answers?.intention || "A spark of inspiration";
+
+  const handleDisconnect = async () => {
+    await disconnectTezos();
+    window.location.href = "/";
+  };
+
   return (
     <div className="flex flex-col items-center w-full h-full p-6 pt-16 pb-32 overflow-y-auto z-10">
       <motion.div 
@@ -35,23 +74,33 @@ export default function Profile() {
           </div>
         </div>
 
-        <h1 className="font-serif text-3xl text-white mb-2 tracking-wide">tz1...aB9q</h1>
-        <p className="font-sans text-sm text-gray-400 mb-12 italic font-light">"A spark of inspiration"</p>
+        <h1 className="font-serif text-3xl text-white mb-2 tracking-wide">
+          {loading ? "Loading..." : shortAddress(profile?.wallet_address || evmAddress)}
+        </h1>
+        <p className="font-sans text-sm text-gray-400 mb-12 italic font-light">&quot;{auraLine}&quot;</p>
+        {error && <p className="text-xs text-red-300 mb-8">{error}</p>}
 
         {/* Stats / Aura traits */}
         <div className="w-full grid grid-cols-2 gap-4 mb-10 px-2">
           <motion.div whileHover={{ scale: 1.05 }} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center border border-white/5">
             <span className="text-3xl mb-3">🌙</span>
-            <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#e2c083]">Night Owl</span>
+            <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#e2c083]">
+              {profile?.archetype || "The Enigma"}
+            </span>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center border border-white/5">
             <span className="text-3xl mb-3">💎</span>
-            <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#e2c083]">Long-term</span>
+            <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#e2c083]">
+              {profile?.last_layer || "Universal"}
+            </span>
           </motion.div>
         </div>
 
         <button className="w-full taste-button mb-6">Edit Intentions</button>
-        <button className="font-sans text-[10px] uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors pb-10">
+        <button
+          onClick={handleDisconnect}
+          className="font-sans text-[10px] uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors pb-10"
+        >
           Disconnect Wallet
         </button>
       </motion.div>
