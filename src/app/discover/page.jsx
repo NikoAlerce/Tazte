@@ -1,41 +1,33 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ProfileGallery from "@/components/ProfileGallery";
+import { getProfiles } from "@/lib/supabase";
 
 export default function Discover() {
-  const [profiles, setProfiles] = useState([
-    {
-      id: 1,
-      name: "Marcus",
-      role: "The Visionary",
-      quote: "Code is poetry, the blockchain is the canvas where algorithms breathe.",
-      tags: ["Artist", "Generative Art", "Loyal Collector", "Teia Origin"],
-      archetype: "The Visionary",
-      image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop",
-    },
-    {
-      id: 2,
-      name: "Elena",
-      role: "The Grand Patron",
-      quote: "Seeking light in the generative darkness. I collect what moves the soul.",
-      tags: ["Collector", "High-Value Holding", "Curation Maven"],
-      archetype: "The Grand Patron",
-      image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2800&auto=format&fit=crop",
-    },
-    {
-      id: 3,
-      name: "Camille",
-      role: "The Curator",
-      quote: "The silence between the notes is where my art lives. Stillness is a luxury.",
-      tags: ["Curator", "Deep Searcher", "Emerging Artist"],
-      archetype: "The Curator",
-      image: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?q=80&w=2800&auto=format&fit=crop",
-    }
-  ]);
-
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    async function loadProfiles() {
+      const data = await getProfiles();
+      
+      // Map Supabase data to the UI format
+      const mappedProfiles = data.map(p => ({
+        id: p.id,
+        name: p.wallet_address.slice(0, 6),
+        role: p.archetype || "The Enigma",
+        quote: "Collecting memories on the chain...",
+        tags: [p.last_layer || "Universal", "Collector"],
+        archetype: p.archetype || "The Enigma",
+        image: `https://api.dicebear.com/7.x/shapes/svg?seed=${p.wallet_address}`, // Abstract avatar for privacy
+      }));
+
+      setProfiles(mappedProfiles);
+      setLoading(false);
+    }
+    loadProfiles();
+  }, []);
 
   const handleNext = () => {
     if (currentIndex < profiles.length) {
@@ -43,7 +35,15 @@ export default function Discover() {
     }
   };
 
-  const isFinished = currentIndex >= profiles.length;
+  const isFinished = currentIndex >= profiles.length && !loading;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <p className="font-editorial text-2xl text-white/50 animate-pulse">Scanning the Art Sphere...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center w-full min-h-screen relative z-10">
