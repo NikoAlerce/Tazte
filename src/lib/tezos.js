@@ -23,10 +23,20 @@ export const getWallet = () => {
 };
 
 export const connectWallet = async () => {
-  const walletInstance = getWallet();
-  await walletInstance.requestPermissions();
-  const address = await walletInstance.getPKH();
-  return address;
+  try {
+    const walletInstance = getWallet();
+    // Force a clear of any previous stale permissions
+    await walletInstance.client.clearActiveAccount();
+    
+    await walletInstance.requestPermissions();
+    
+    const address = await walletInstance.getPKH();
+    console.log('Tezos address connected:', address);
+    return address;
+  } catch (err) {
+    console.error('Beacon connection error:', err);
+    throw err;
+  }
 };
 
 export const disconnectWallet = async () => {
