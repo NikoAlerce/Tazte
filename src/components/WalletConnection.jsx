@@ -19,7 +19,10 @@ export default function WalletConnection() {
 
   useEffect(() => {
     checkTezos();
-  }, []);
+    if (isEvmConnected && evmAddress) {
+      runAnalysis(evmAddress, 'etherlink');
+    }
+  }, [isEvmConnected, evmAddress]);
 
   const checkTezos = async () => {
     const account = await getActiveAccount();
@@ -29,13 +32,23 @@ export default function WalletConnection() {
     }
   };
 
-  const runAnalysis = async (address) => {
+  const runAnalysis = async (address, layer = 'tezos') => {
     try {
       const data = await analyzeCollectorArchetype(address);
       setAnalysis(data);
+      
+      // Persist to Supabase
+      await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          archetype: data.primaryArchetype,
+          layer
+        })
+      });
     } catch (err) {
-      console.error('Analysis failed', err);
-      // Set a default state instead of hanging
+      console.error('Analysis or Save failed', err);
       setAnalysis({ primaryArchetype: 'The Enigma' });
     }
   };
