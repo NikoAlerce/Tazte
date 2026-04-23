@@ -14,17 +14,20 @@ export default function Onboarding() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [hoveredOption, setHoveredOption] = useState(null);
+  const [answers, setAnswers] = useState({});
 
   const steps = [
     {
       title: "Identity",
       question: "How do you present yourself to the world?",
       options: ["Man", "Woman", "Non-Binary", "Genderqueer", "Transgender", "Agender", "Fluid", "Prefer not to say"],
+      key: "identity"
     },
     {
       title: "Seeking",
       question: "Who are you seeking in this gallery?",
       options: ["Men", "Women", "Non-Binary / Fluid", "Everything and Everyone", "Just looking for Art"],
+      key: "seeking"
     },
     {
       title: "Intention",
@@ -34,6 +37,7 @@ export default function Onboarding() {
         "A spark of inspiration (Casual)",
         "Creative companionship (Friendship)",
       ],
+      key: "intention"
     },
     {
       title: "Philosophy",
@@ -43,6 +47,7 @@ export default function Onboarding() {
         "Provide solace",
         "A delicate balance of both",
       ],
+      key: "philosophy"
     },
     {
       title: "Value",
@@ -52,6 +57,7 @@ export default function Onboarding() {
         "The final aesthetic result",
         "The concept behind the piece",
       ],
+      key: "value"
     },
     {
       title: "Resilience",
@@ -61,6 +67,7 @@ export default function Onboarding() {
         "Keep creating/collecting quietly",
         "Double down and build louder",
       ],
+      key: "resilience"
     },
     {
       title: "Connection",
@@ -71,6 +78,7 @@ export default function Onboarding() {
         "Sending a private message of encouragement",
         "Collaborating with them",
       ],
+      key: "connection"
     },
     {
       title: "The Algorithm",
@@ -79,16 +87,42 @@ export default function Onboarding() {
         "Connect X Account",
         "Skip for now"
       ],
+      key: "twitter",
       isSpecial: true
     },
   ];
 
-  const handleNext = () => {
+  const handleNext = async (option) => {
+    const currentKey = steps[step].key;
+    const newAnswers = { ...answers, [currentKey]: option };
+    setAnswers(newAnswers);
     setHoveredOption(null);
+
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
+      await saveOnboarding(newAnswers);
       router.push("/discover");
+    }
+  };
+
+  const saveOnboarding = async (finalAnswers) => {
+    try {
+      const { getActiveAccount } = await import('@/lib/tezos');
+      const account = await getActiveAccount();
+      
+      if (account) {
+        await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: account.address,
+            onboarding_answers: finalAnswers
+          })
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save onboarding', err);
     }
   };
 
@@ -96,7 +130,6 @@ export default function Onboarding() {
     <div className="flex flex-col items-center justify-center w-full h-full relative z-10">
       <div className="bg-noise" />
       
-      {/* Editorial Header */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -135,7 +168,7 @@ export default function Onboarding() {
                 return (
                   <button
                     key={idx}
-                    onClick={handleNext}
+                    onClick={() => handleNext(option)}
                     className="flex items-center gap-4 border border-white/20 px-8 py-4 text-sm tracking-widest uppercase hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all duration-500"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true" className="w-4 h-4 fill-current">
@@ -151,7 +184,7 @@ export default function Onboarding() {
                   key={idx}
                   onMouseEnter={() => setHoveredOption(idx)}
                   onMouseLeave={() => setHoveredOption(null)}
-                  onClick={handleNext}
+                  onClick={() => handleNext(option)}
                   className={`text-lg md:text-xl font-sans font-light tracking-wide transition-all duration-700 ${
                     isOtherHovered ? "opacity-20 blur-[2px]" : "opacity-100"
                   } ${isHovered ? "text-[#D4AF37] scale-105" : "text-white/70"}`}
