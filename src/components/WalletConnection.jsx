@@ -13,6 +13,8 @@ export default function WalletConnection() {
   const [tezosAddress, setTezosAddress] = useState(null);
   const [isTezosConnecting, setIsTezosConnecting] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [connectionError, setConnectionError] = useState("");
+  const [evmConnectRequested, setEvmConnectRequested] = useState(false);
   
   // EVM / Etherlink
   const { address: evmAddress, isConnected: isEvmConnected } = useAccount();
@@ -21,6 +23,7 @@ export default function WalletConnection() {
 
   const runAnalysis = useCallback(async (address, layer = 'tezos') => {
     try {
+      localStorage.setItem("taste_wallet_address", address);
       const data = await analyzeCollectorArchetype(address);
       setAnalysis(data);
       
@@ -50,7 +53,7 @@ export default function WalletConnection() {
         }
       }, 2000); // Give them 2 seconds to see their archetype
 
-    } catch (err) {
+    } catch {
       setAnalysis({ primaryArchetype: 'The Enigma' });
     }
   }, [router]);
@@ -59,37 +62,47 @@ export default function WalletConnection() {
     const account = await getActiveAccount();
     if (account) {
       setTezosAddress(account.address);
-      runAnalysis(account.address);
     }
-  }, [runAnalysis]);
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       checkTezos();
-      if (isEvmConnected && evmAddress) {
+      if (evmConnectRequested && isEvmConnected && evmAddress) {
         runAnalysis(evmAddress, 'etherlink');
+        setEvmConnectRequested(false);
       }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [checkTezos, isEvmConnected, evmAddress, runAnalysis]);
+  }, [checkTezos, evmConnectRequested, isEvmConnected, evmAddress, runAnalysis]);
 
   const handleTezosConnect = async () => {
     try {
       setIsTezosConnecting(true);
-      const addr = await connectWallet();
+      setConnectionError("");
+
+      const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Permission request timed out")), 45000);
+      });
+
+      const addr = await Promise.race([connectWallet(), timeout]);
       setTezosAddress(addr);
       // Non-blocking analysis
       runAnalysis(addr);
-    } catch (err) {
+    } catch {
+      setConnectionError("No pudimos confirmar permisos en Kukai. Cerrala y volve a tocar Connect Beacon.");
+    } finally {
       setIsTezosConnecting(false);
     }
   };
 
   const handleTezosDisconnect = async () => {
     await disconnectTezos();
+    localStorage.removeItem("taste_wallet_address");
     setTezosAddress(null);
     setAnalysis(null);
+    setConnectionError("");
   };
 
   return (
@@ -122,7 +135,11 @@ export default function WalletConnection() {
             </button>
           ) : (
             <button 
-              onClick={() => connectEvm({ connector: injected() })} 
+              onClick={() => {
+                setConnectionError("");
+                setEvmConnectRequested(true);
+                connectEvm({ connector: injected() });
+              }}
               className="taste-button"
             >
               Connect EVM
@@ -132,6 +149,15 @@ export default function WalletConnection() {
       </div>
       
       <AnimatePresence>
+        {connectionError && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-micro text-red-300 mt-3 text-center max-w-xs"
+          >
+            {connectionError}
+          </motion.p>
+        )}
         {analysis && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}

@@ -1,5 +1,6 @@
 import { BeaconWallet } from '@taquito/beacon-wallet';
 import { TezosToolkit } from '@taquito/taquito';
+import { NetworkType } from '@airgap/beacon-sdk';
 
 const RPC_URL = process.env.NEXT_PUBLIC_TEZOS_RPC || 'https://mainnet.api.tez.ie';
 const Tezos = new TezosToolkit(RPC_URL);
@@ -18,26 +19,25 @@ export const getWallet = () => {
 };
 
 export const connectWallet = async () => {
-  try {
-    const walletInstance = getWallet();
-    if (!walletInstance) {
-      throw new Error("Wallet unavailable");
-    }
-    // Force a clear of any previous stale permissions
-    await walletInstance.client.clearActiveAccount();
-    
-    await walletInstance.requestPermissions();
-    
-    const address = await walletInstance.getPKH();
-    return address;
-  } catch (error) {
-    throw error;
+  const walletInstance = getWallet();
+  if (!walletInstance) {
+    throw new Error("Wallet unavailable");
   }
+
+  await walletInstance.requestPermissions({
+    network: { type: NetworkType.MAINNET },
+  });
+
+  const address = await walletInstance.getPKH();
+  return address;
 };
 
 export const disconnectWallet = async () => {
   const walletInstance = getWallet();
   if (!walletInstance) return;
+  await walletInstance.client.clearActiveAccount();
+  await walletInstance.client.removeAllAccounts();
+  await walletInstance.client.removeAllPeers();
   await walletInstance.clearActiveAccount();
 };
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAccount } from "wagmi";
-import { getProfiles } from "@/lib/supabase";
 import { getConnectedWalletAddress, shortAddress } from "@/lib/walletSession";
 
 export default function Matches() {
@@ -16,18 +15,30 @@ export default function Matches() {
     async function loadMatches() {
       try {
         const walletAddress = await getConnectedWalletAddress(evmAddress);
-        const profiles = await getProfiles();
+        if (!walletAddress) {
+          setError("Connect your wallet to load encounters.");
+          return;
+        }
 
-        const nextMatches = profiles
-          .filter((profile) => profile.wallet_address !== walletAddress)
-          .slice(0, 10)
-          .map((profile, index) => ({
-            id: profile.id,
-            name: shortAddress(profile.wallet_address),
-            lastMessage: `Shared archetype potential: ${profile.archetype || "The Enigma"}`,
+        const response = await fetch("/api/matches", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: walletAddress, limit: 10 }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load matches");
+        }
+
+        const payload = await response.json();
+        const nextMatches = (payload.matches || []).map((match, index) => ({
+            id: match.id,
+            name: shortAddress(match.wallet_address),
+            lastMessage: match.summary,
             time: "Recently",
             unread: index % 2 === 0,
-            image: `https://api.dicebear.com/7.x/shapes/svg?seed=${profile.wallet_address || profile.id}`,
+            score: match.score,
+            image: match.image,
           }));
 
         setMatches(nextMatches);
@@ -101,6 +112,10 @@ export default function Matches() {
               <p className={`font-sans text-xs truncate ${match.unread ? "text-[#e2c083] font-light" : "text-gray-400 font-light"}`}>
                 {match.lastMessage}
               </p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] uppercase tracking-[0.15em] text-[#e2c083]">Match</span>
+              <span className="text-sm text-white/90">{match.score}%</span>
             </div>
             {match.unread && (
               <div className="w-2 h-2 rounded-full bg-[#e2c083] shadow-[0_0_10px_rgba(226,192,131,0.5)]" />

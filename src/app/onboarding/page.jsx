@@ -118,6 +118,9 @@ export default function Onboarding() {
         const account = await getActiveAccount();
         if (account) address = account.address;
       }
+      if (!address && typeof window !== "undefined") {
+        address = localStorage.getItem("taste_wallet_address");
+      }
       
       if (address) {
         const response = await fetch('/api/auth', {
