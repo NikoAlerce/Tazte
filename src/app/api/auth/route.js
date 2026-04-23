@@ -16,22 +16,28 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Database configuration missing' }, { status: 500 });
     }
 
-    const { address, archetype, layer } = await request.json();
-    console.log(`Authenticating wallet: ${address} on ${layer} with archetype: ${archetype}`);
+    const { address, archetype, layer, onboarding_answers, twitter_handle } = await request.json();
+    console.log(`Processing profile for: ${address}`);
 
     if (!address) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
+    // Build update object dynamically to avoid overwriting with nulls
+    const updateData = { 
+      wallet_address: address,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (archetype) updateData.archetype = archetype;
+    if (layer) updateData.last_layer = layer;
+    if (onboarding_answers) updateData.onboarding_answers = onboarding_answers;
+    if (twitter_handle) updateData.twitter_handle = twitter_handle;
+
     // Upsert user profile
     const { data, error } = await supabase
       .from('profiles')
-      .upsert({ 
-        wallet_address: address, 
-        archetype: archetype,
-        last_layer: layer,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'wallet_address' })
+      .upsert(updateData, { onConflict: 'wallet_address' })
       .select();
 
     if (error) {
