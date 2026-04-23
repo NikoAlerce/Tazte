@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAccount } from "wagmi";
 import ProfileGallery from "@/components/ProfileGallery";
-import { getProfiles } from "@/lib/supabase";
+import { getConnectedWalletAddress, shortAddress } from "@/lib/walletSession";
 
 export default function Discover() {
+  const { address: evmAddress } = useAccount();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -14,15 +16,33 @@ export default function Discover() {
   useEffect(() => {
     async function loadProfiles() {
       try {
-        const data = await getProfiles();
-        const mappedProfiles = data.map((p) => ({
-          id: p.id,
-          name: p.wallet_address?.slice(0, 6) || "anon",
-          role: p.archetype || "The Enigma",
-          quote: "Collecting memories on the chain...",
-          tags: [p.last_layer || "Universal", "Collector"],
-          archetype: p.archetype || "The Enigma",
-          image: `https://api.dicebear.com/7.x/shapes/svg?seed=${p.wallet_address || p.id}`,
+        const walletAddress = await getConnectedWalletAddress(evmAddress);
+        if (!walletAddress) {
+          setError("Connect your wallet to discover profiles.");
+          setProfiles([]);
+          return;
+        }
+
+        const response = await fetch("/api/matches", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: walletAddress, limit: 30 }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load matches");
+        }
+
+        const payload = await response.json();
+        const mappedProfiles = (payload.matches || []).map((match) => ({
+          id: match.id,
+          name: shortAddress(match.wallet_address),
+          role: match.archetype || "The Enigma",
+          quote: match.summary || "Collecting memories on the chain...",
+          tags: [match.archetype || "The Enigma", "Collector"],
+          archetype: match.archetype || "The Enigma",
+          image: match.image,
+          score: match.score,
         }));
         setProfiles(mappedProfiles);
       } catch {
@@ -33,7 +53,7 @@ export default function Discover() {
       }
     }
     loadProfiles();
-  }, []);
+  }, [evmAddress]);
 
   const handleNext = () => {
     if (currentIndex < profiles.length) {

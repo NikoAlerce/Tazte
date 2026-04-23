@@ -8,7 +8,15 @@ export async function getConnectedWalletAddress(evmAddress) {
   }
 
   const account = await getActiveAccount();
-  return account?.address || null;
+  if (account?.address) {
+    return account.address;
+  }
+
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("taste_wallet_address");
+  }
+
+  return null;
 }
 
 export function shortAddress(address) {

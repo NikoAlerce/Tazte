@@ -31,6 +31,11 @@ export default function ProfileGallery({ profile, onNext }) {
             <p className="font-serif italic text-2xl text-white tracking-wide">
               {profile.archetype}
             </p>
+            {typeof profile.score === "number" && (
+              <span className="text-micro text-[#D4AF37]/80 mt-1">
+                Match Score: {profile.score}%
+              </span>
+            )}
           </div>
         </div>
 
