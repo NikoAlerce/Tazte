@@ -38,7 +38,8 @@ export default function WalletConnection() {
       setAnalysis(data);
       
       // Persist to Supabase
-      await fetch('/api/auth', {
+      console.log('Sending to Supabase:', { address, archetype: data.primaryArchetype, layer });
+      const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -47,6 +48,11 @@ export default function WalletConnection() {
           layer
         })
       });
+      
+      const result = await response.json();
+      console.log('Supabase response:', result);
+      
+      if (!response.ok) throw new Error(result.error || 'Server error');
     } catch (err) {
       console.error('Analysis or Save failed', err);
       setAnalysis({ primaryArchetype: 'The Enigma' });
