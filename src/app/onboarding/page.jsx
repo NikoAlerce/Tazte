@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useAccount } from 'wagmi';
 
 // Utility for Roman Numerals
 const toRoman = (num) => {
@@ -12,6 +13,7 @@ const toRoman = (num) => {
 
 export default function Onboarding() {
   const router = useRouter();
+  const { address: evmAddress } = useAccount();
   const [step, setStep] = useState(0);
   const [hoveredOption, setHoveredOption] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -108,15 +110,21 @@ export default function Onboarding() {
 
   const saveOnboarding = async (finalAnswers) => {
     try {
-      const { getActiveAccount } = await import('@/lib/tezos');
-      const account = await getActiveAccount();
+      let address = evmAddress;
       
-      if (account) {
+      // If no EVM address, check for Tezos
+      if (!address) {
+        const { getActiveAccount } = await import('@/lib/tezos');
+        const account = await getActiveAccount();
+        if (account) address = account.address;
+      }
+      
+      if (address) {
         await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            address: account.address,
+            address: address,
             onboarding_answers: finalAnswers
           })
         });
