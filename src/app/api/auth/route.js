@@ -24,6 +24,7 @@ export async function POST(request) {
     }
 
     // Upsert user profile
+    console.log('Attempting upsert for:', address);
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ 
@@ -32,14 +33,21 @@ export async function POST(request) {
         last_layer: layer,
         updated_at: new Date().toISOString()
       }, { onConflict: 'wallet_address' })
-      .select();
+      .select('*');
+
+    console.log('Supabase raw data:', data);
+    console.log('Supabase raw error:', error);
 
     if (error) {
-      console.error('Supabase error:', error);
+      console.error('Supabase error detail:', error);
       throw error;
     }
 
-    return NextResponse.json({ success: true, profile: data[0] });
+    return NextResponse.json({ 
+      success: true, 
+      profile: data && data.length > 0 ? data[0] : null,
+      message: data && data.length > 0 ? 'User persisted' : 'No data returned from Supabase'
+    });
   } catch (err) {
     console.error('Full Auth API error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
