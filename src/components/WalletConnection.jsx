@@ -1,13 +1,13 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { connectWallet, disconnectWallet as disconnectTezos, getActiveAccount } from '@/lib/tezos';
 import { analyzeCollectorArchetype } from '@/lib/tzkt';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export default function WalletConnection() {
+  const router = useRouter();
   const [tezosAddress, setTezosAddress] = useState(null);
   const [isTezosConnecting, setIsTezosConnecting] = useState(false);
   const [analysis, setAnalysis] = useState(null);
@@ -37,8 +37,8 @@ export default function WalletConnection() {
       const data = await analyzeCollectorArchetype(address);
       setAnalysis(data);
       
-      // Persist to Supabase
-      await fetch('/api/auth', {
+      // Persist to Supabase and check profile status
+      const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -47,6 +47,18 @@ export default function WalletConnection() {
           layer
         })
       });
+
+      const { profile } = await response.json();
+
+      // Smart Redirection
+      setTimeout(() => {
+        if (profile?.onboarding_answers) {
+          router.push('/discover');
+        } else {
+          router.push('/onboarding');
+        }
+      }, 2000); // Give them 2 seconds to see their archetype
+
     } catch (err) {
       console.error('Analysis or Save failed', err);
       setAnalysis({ primaryArchetype: 'The Enigma' });
