@@ -105,6 +105,14 @@ export default function WalletConnection() {
     setConnectionError("");
   };
 
+  const handleEvmDisconnect = () => {
+    disconnectEvm();
+    localStorage.removeItem("taste_wallet_address");
+    setAnalysis(null);
+    setConnectionError("");
+    setEvmConnectRequested(false);
+  };
+
   return (
     <div className="flex flex-col gap-4 items-center">
       <div className="flex gap-8">
@@ -130,7 +138,7 @@ export default function WalletConnection() {
         <div className="flex flex-col items-center">
           <span className="text-micro text-gray-500 mb-2">Etherlink L2</span>
           {isEvmConnected ? (
-            <button onClick={() => disconnectEvm()} className="taste-button text-gold-500">
+            <button onClick={handleEvmDisconnect} className="taste-button text-gold-500">
               {evmAddress.slice(0, 6)}...{evmAddress.slice(-4)}
             </button>
           ) : (

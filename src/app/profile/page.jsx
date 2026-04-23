@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useAccount } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { getProfileByAddress } from "@/lib/supabase";
 import { getConnectedWalletAddress, shortAddress } from "@/lib/walletSession";
 import { disconnectWallet as disconnectTezos } from "@/lib/tezos";
 
 export default function Profile() {
   const { address: evmAddress } = useAccount();
+  const { disconnect: disconnectEvm } = useDisconnect();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
@@ -38,7 +39,9 @@ export default function Profile() {
   const auraLine = profile?.onboarding_answers?.intention || "A spark of inspiration";
 
   const handleDisconnect = async () => {
+    disconnectEvm();
     await disconnectTezos();
+    localStorage.removeItem("taste_wallet_address");
     window.location.href = "/";
   };
 
